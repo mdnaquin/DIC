@@ -41,6 +41,7 @@ import numpy as np
 from scipy import stats
 import cv2
 from pydic import Display
+import math
 # locate the pydic module and import it
 import imp
 
@@ -54,9 +55,9 @@ def getFrame(sec):
 
 
 pydic = imp.load_source('pydic', 'C:/Users/mdnaq_000/Downloads/pydic.py')
-com = float(disp.getText('Please enter the correct COM port', 'COM5'))
-disp = Display(com)
-testChoice = disp.chooseTest()
+disp = Display()
+com = disp.getText('Please enter the correct COM port', 'COM5')
+testChoice = disp.chooseTest(com)
 tp = 'none'
 
 if testChoice == 'three':
@@ -185,7 +186,10 @@ elif testChoice == 'threept':
     strain = max_strain_xx.tolist()
 if testChoice == 'hard':
     force = max(force)
-    disp.saveData(filepath, seconds, force, stress, strain)
+    D = 7/32
+    hardness = force/(math.pi*D/2*(D-sqrt(D**2-diam**2)))
+    print(hardness)
+    disp.saveData(filepath, seconds, force, hardness)
 elif testChoice == 'three' or 'tensile':
     '''
     forcelen = len(force)
