@@ -63,21 +63,21 @@ class WrappingLabel(tk.Label):
 
 class Display:
 
-    def __init__(self, port):
+    def __init__(self):
         self.running = False
         self.main = tk.Tk()
         self.main.wm_title("DIC Stuff")
-        self.port = port
+        self.port = 'none'
         self.topBox = tk.Frame(self.main, width=500, height=500)
         self.buttBox = tk.Frame(self.main)
         self.topBox.grid(row=0, column=0)
         self.buttBox.grid(row=1, column=0)
         self.var = tk.IntVar()
         self.test = 'none'
-        try:
-            self.ser = serial.Serial(self.port, 1000000)
-        except serial.SerialException:
-            print("Reload the console or unplug the USB and plug it back in")
+    #    try:
+    #        self.ser = serial.Serial(self.port, 1000000)
+    #    except serial.SerialException:
+    #        print("Check the COM port or reload the console.")
         self.force = []
         self.seconds = []
         self.data = 'not collected'
@@ -119,7 +119,8 @@ class Display:
         self.rectButt.wait_variable(self.var)
         return self.tp
 
-    def chooseTest(self):
+    def chooseTest(self, com):
+        self.port = com
         try:
             self.buttBox.destroy()
         except tk.TclError:
@@ -183,6 +184,8 @@ class Display:
         self.stopButt.bind("<Button-1>", self.stopRec)
         while self.running:
             b = self.ser.readline()
+            time.sleep(0.1)
+            print(b)
             try:
                 str_rn = b.decode()
                 string = str_rn.rstrip()
@@ -198,7 +201,11 @@ class Display:
             except UnicodeDecodeError:
                 print('Click record again if not recording')
             print("Recording Force...")
-        self.ser.close()
+            print(self.force)
+        try:
+            self.ser.close()
+        except AttributeError:
+            pass
         if len(self.seconds) > 1:
             del self.seconds[-1]
             del self.force[-1]
