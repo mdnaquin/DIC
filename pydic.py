@@ -55,6 +55,7 @@ grid_list = []  # saving grid here
 
 MatchExpr = "(\d+\.?\d*),(\d+\.?\d*),(-?\d+)"
 
+
 class WrappingLabel(tk.Label):
     '''a type of label that automatically adjusts the wrap to the size'''
     def __init__(self, master=None, **kwargs):
