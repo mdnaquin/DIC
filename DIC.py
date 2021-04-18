@@ -63,10 +63,10 @@ tp = 'none'
 if testChoice == 'three':
     tp = disp.tpType()
 if testChoice == 'three' and tp == 'rect' or testChoice == 'tensile':
-    width = float(disp.getText('Please enter the specimen width in inches', '0.394'))
-    thic = float(disp.getText('Please enter the specimen thickness in inches', '0.125'))
+    width = float(disp.getText('Please enter the specimen width in millimeters', '10.0'))
+    thic = float(disp.getText('Please enter the specimen thickness in millimeters', '3.1'))
 if testChoice == 'three' and tp == 'circ':
-    diam = float(disp.getText('Please enter the specimen diameter in inches', '0.125'))
+    diam = float(disp.getText('Please enter the specimen diameter in millimeters', '3.0'))
 
 disp.recording()
 seconds, psi = disp.dataOut()
@@ -74,11 +74,11 @@ filepath = disp.getText("Filepath:", "C:/Users/mdnaq_000/Downloads/DIC/PS1")
 psi = np.array(psi)
 
 if testChoice == 'tensile':
-    force = psi/((50/25.4)**2)
+    force = (psi/((50/25.4)**2))*4.44822  # convert psi to Newtons
 elif testChoice == 'hard' or 'three':
-    force = psi/(((50-20)/25.4)**2)
+    force = (psi/(((50-20)/25.4)**2))*4.44822  # convert psi to Newtons
 if testChoice == 'hard':
-    diam = float(disp.getText('Please enter the indent diameter in inches', '0.01'))
+    diam = float(disp.getText('Please enter the indent diameter in millimeters', '0.1'))
 elif testChoice == 'three' or 'tensile':
     vidName = disp.getText("Video File Name:", "PS1.mp4")
     disp.closeData()
@@ -151,7 +151,6 @@ elif testChoice == 'three' or 'tensile':
     last_grid.plot_field(last_grid.strain_yy, 'yy strain')
     plt.show()
 
-
     # now extract the main average strains on xx and yy
     # - first, we need to reduce the interest zone where the
     # average values are computed
@@ -171,12 +170,14 @@ if testChoice == 'tensile':
     strain = ave_strain_yy.tolist()
     strainlen = len(ave_strain_yy)
 elif testChoice == 'threept':
-    # compute the maximal normal stress with this force
-    # the maximal normal stress is located in the lower plane
-    L = 4.5  # L is the higher distance between the supports
-    max_stress = (3. / 2.) * force * L / (width * thic ** 2)
-
-    # now extract the maximal average strains on the lower plane of the sample along
+    L = 4.5*25.4  # L is the distance between the supports
+    if tp == 'rect':  # rectangluar cross section
+        # compute the maximal normal stress with this force
+        # the maximal normal stress is located in the lower plane
+        max_stress = (1.5) * force * L / (width * thic ** 2)  # stress in MPa
+    elif tp == 'circ':  # circular cross section
+        max_stress = force * L / (math.pi*((diam/2) ** 3))  # stress in MPa
+    # now extract the maximal average strains on the lower plane of the sample
     x_range = range(1, pydic.grid_list[0].size_x - 1)
     y_range = range(pydic.grid_list[0].size_y - 1, pydic.grid_list[0].size_y)
 
@@ -184,13 +185,12 @@ elif testChoice == 'threept':
     max_strain_xx = np.array([grid.average(grid.strain_xx, x_range, y_range) for grid in pydic.grid_list])
     strain = max_strain_xx.tolist()
 if testChoice == 'hard':
-    force = max(force)
-    D = 7/32
-    hardness = force/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))
-    print(hardness)
-    disp.saveData(filepath, lb=force, d=diam, hardness=hardness)
+    load = (max(force))/9.80665  # get load in kg
+    D = (7/32)*25.4  # ball bearing diam in mm
+    hardness = load/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))  # calculate BH
+    disp.saveData(filepath, force=max(force), diam=diam, hardness=hardness)
 elif testChoice == 'three' or 'tensile':
-    '''
+
     forcelen = len(force)
     if forcelen > strainlen:
         diff = forcelen - strainlen
@@ -201,17 +201,17 @@ elif testChoice == 'three' or 'tensile':
         diff = strainlen - forcelen
         for i in range(diff):
             del ave_strain_yy[-1]
-    
-    force = np.array(force)
-    stress = force/(width * thic)
+
+#    force = np.array(force)
+    stress = force/(width * thic)  # stress in MPa
     disp = Display(com)
     disp.dataPlot(stress, ave_strain_yy, seconds, force)
-    '''
+    disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
+'''
     force = np.zeros(strainlen)
     stress = np.zeros(strainlen)
     seconds = np.linspace(0, sec, (strainlen+1))
-
-    disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
+'''
 
 
 '''
@@ -222,7 +222,6 @@ l = (19. - 5.)*1e-3 # l is the higher distance between the supports
 b = 7.66e-3    # b is the sample width
 h = 4.06e-3    # h is the sample thickness
 max_stress = (3./2.)* force *(L-l)/(b*h**2)
-
 
 # now extract the maximal average strains on the lower plane of the sample along
 x_range = range(1                          , pydic.grid_list[0].size_x-1)

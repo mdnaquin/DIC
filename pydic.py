@@ -109,8 +109,10 @@ class Display:
             sys.exit()
         self.buttBox = tk.Frame(self.main)
         self.buttBox.grid(row=1, column=0)
-        self.rectButt = tk.Button(self.buttBox, text="Rectangular Cross Section", height=2)
-        self.circButt = tk.Button(self.buttBox, text="Circular Cross Section", height=2)
+        self.rectButt = tk.Button(self.buttBox,
+                                  text="Rectangular Cross Section", height=2)
+        self.circButt = tk.Button(self.buttBox,
+                                  text="Circular Cross Section", height=2)
         self.rectButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
         self.circButt.grid(row=0, column=1, ipadx=20, padx=10, pady=10)
         self.rectButt.bind("<Button-1>", self.rectFunc)
@@ -127,9 +129,12 @@ class Display:
             sys.exit()
         self.buttBox = tk.Frame(self.main)
         self.buttBox.grid(row=1, column=0)
-        self.threeButt = tk.Button(self.buttBox, text="3-point Bending", height=2)
-        self.tensileButt = tk.Button(self.buttBox, text="Tensile Test", height=2)
-        self.hardButt = tk.Button(self.buttBox, text="Hardness Test", height=2)
+        self.threeButt = tk.Button(self.buttBox, text="3-point Bending",
+                                   height=2)
+        self.tensileButt = tk.Button(self.buttBox, text="Tensile Test",
+                                     height=2)
+        self.hardButt = tk.Button(self.buttBox, text="Hardness Test",
+                                  height=2)
         self.threeButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
         self.tensileButt.grid(row=0, column=1, ipadx=20, padx=10, pady=10)
         self.hardButt.grid(row=0, column=2, ipadx=20, padx=10, pady=10)
@@ -173,9 +178,12 @@ class Display:
             pass
         self.buttBox = tk.Frame(self.main)
         self.buttBox.grid(row=1, column=0)
-        self.startButt = tk.Button(self.buttBox, text="Record Force", height=2)
-        self.stopButt = tk.Button(self.buttBox, text="Stop Recording", height=2)
-        self.nextButt = tk.Button(self.buttBox, text="Done With Force", height=2)
+        self.startButt = tk.Button(self.buttBox, text="Record Force",
+                                   height=2)
+        self.stopButt = tk.Button(self.buttBox, text="Stop Recording",
+                                  height=2)
+        self.nextButt = tk.Button(self.buttBox, text="Done With Force",
+                                  height=2)
         self.startButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
         self.stopButt.grid(row=0, column=1, ipadx=20, padx=10, pady=10)
         self.startButt.bind("<Button-1>", self.startRec)
@@ -234,7 +242,8 @@ class Display:
             self.ser.close()
         except AttributeError:
             pass
-        self.nextButt = tk.Button(self.buttBox, text="Done With Force", height=2)
+        self.nextButt = tk.Button(self.buttBox, text="Done With Force",
+                                  height=2)
         if len(self.seconds) > 1:
             self.nextButt.bind("<Button-1>", self.doneRec)
         else:
@@ -252,7 +261,7 @@ class Display:
         scatterboi = plt.Figure(figsize=(21, 5))
         fvt = scatterboi.add_subplot(131)  # force vs time plot
         fvt.plot(self.seconds, self.force, 'o', color='black')
-        fvt.set_ylabel('Force (lb)')
+        fvt.set_ylabel('Force (N)')
         fvt.set_xlabel('Time (sec)')
         fvt.set_title('Force vs. Time')
         svt = scatterboi.add_subplot(132)  # strain vs time plot
@@ -262,7 +271,7 @@ class Display:
         svt.set_title('Strain vs. Time')
         svs = scatterboi.add_subplot(133)  # stress vs strain plot
         svs.plot(self.strain, self.stress, 'o', color='black')
-        svs.set_ylabel('Stress (psi)')
+        svs.set_ylabel('Stress (MPa)')
         svs.set_xlabel('Strain')
         svs.set_title('Stress vs. Strain')
 
@@ -270,7 +279,8 @@ class Display:
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH)
 
         self.ser.close()
-        self.closeButt = tk.Button(self.buttBox, text="Close", height=2, command=lambda: self.var.set(1))
+        self.closeButt = tk.Button(self.buttBox, text="Close", height=2,
+                                   command=lambda: self.var.set(1))
         self.closeButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
         self.closeButt.wait_variable(self.var)
         self.main.destroy()
@@ -287,21 +297,26 @@ class Display:
         f = open(name, 'w')
         index = 0
         if 'hardness' in kwargs:
-            print('reee')
-            f.write("Max Force, Diameter, Hardness\n")
-            f.write(str(lb) + ',' + str(d) + ',' + str(hardness) + '\n')
+            f.write("Max Force (N), Diameter (mm), Brinnell Hardness\n")
+            f.write(str(kwargs['force']) + ',' + str(kwargs['diam']) + ','
+                    + str(kwargs['hardness']) + '\n')
         else:
-            f.write("Index, Time, Force (lb), Stress (psi), Strain\n")
+            f.write("Index, Time (sec), Force (N), Stress (MPa), Strain\n")
+            strain = kwargs['strain']
+            seconds = kwargs['seconds']
+            force = kwargs['force']
+            stress = kwargs['stress']
             for i in range(len(strain)):
                 f.write(str(index) + ',' + str(seconds[i]) + ',' + str(force[i])
                         + ',' + str(stress[i]) + ',' + str(strain[i]) + '\n')
                 index = index + 1
         f.close()
 
+
 class grid:
      """The grid class is the main class of pydic. This class embed a lot of usefull
 method to treat and post-treat results"""
-     
+
      def __init__(self, grid_x, grid_y, size_x, size_y):
           """Construct a new grid objet with x coordinate (grid_x), 
 y coordinate (grid_y), number of point along x (size_x) and 
