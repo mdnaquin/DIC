@@ -49,9 +49,11 @@ import serial
 import time
 import threading
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import re
 
 grid_list = []  # saving grid here
 
+MatchExpr = "(\d+\.?\d*),(\d+\.?\d*),(-?\d+)"
 
 class WrappingLabel(tk.Label):
     '''a type of label that automatically adjusts the wrap to the size'''
@@ -184,20 +186,34 @@ class Display:
         self.stopButt.bind("<Button-1>", self.stopRec)
         while self.running:
             b = self.ser.readline()
-            time.sleep(0.1)
+  #          time.sleep(0.1)
             print(b)
             try:
                 str_rn = b.decode()
                 string = str_rn.rstrip()
-                try:
-                    secondsstr, forcestr = string.split(",")
-                    secondsflt = float(secondsstr)
-                    forceflt = float(forcestr)
+
+                result = re.match(MatchExpr, string)
+
+                if result is None:
+                    print(f"Illegal string: {string}")
+                else:
+                    secondflt = float(result[1])
+                    forceflt = float(result[2])
+                    encoderCunt = float(result[3])
+                    print(encoderCunt)
+
                     if forceflt >= 5:
-                        self.seconds.append(secondsflt)
+                        self.seconds.append(secondflt)
                         self.force.append(forceflt)
-                except ValueError:
-                    pass
+                # try:
+                #     secondsstr, forcestr = string.split(",")
+                #     secondsflt = float(secondsstr)
+                #     forceflt = float(forcestr)
+                #     if forceflt >= 5:
+                #         self.seconds.append(secondsflt)
+                #         self.force.append(forceflt)
+                # except ValueError:
+                #     pass
             except UnicodeDecodeError:
                 print('Click record again if not recording')
             print("Recording Force...")
@@ -223,7 +239,7 @@ class Display:
         self.force = []
         self.seconds = []
         try:
-            self.ser = serial.Serial(self.port, 1000000)
+            self.ser = serial.Serial(self.port, 2000000)
             t = threading.Thread(target=self.recording)
             t.start()
         except serial.serialutil.SerialException:
