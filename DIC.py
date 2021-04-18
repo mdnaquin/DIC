@@ -54,7 +54,7 @@ def getFrame(sec):
     return hasFrames
 
 
-pydic = imp.load_source('pydic', 'C:/Users/mdnaq_000/Downloads/pydic.py')
+pydic = imp.load_source('pydic', 'C:/Users/Matthew/Documents/GitHub/DIC/pydic.py')
 disp = Display()
 com = disp.getText('Please enter the correct COM port', 'COM5')
 testChoice = disp.chooseTest(com)
@@ -69,8 +69,9 @@ if testChoice == 'three' and tp == 'circ':
     diam = float(disp.getText('Please enter the specimen diameter in inches', '0.125'))
 
 disp.recording()
-seconds, force = disp.dataOut()
+seconds, psi = disp.dataOut()
 filepath = disp.getText("Filepath:", "C:/Users/mdnaq_000/Downloads/DIC/PS1")
+psi = np.array(psi)
 
 if testChoice == 'tensile':
     force = psi/((50/25.4)**2)
@@ -112,16 +113,16 @@ elif testChoice == 'three' or 'tensile':
     # read image series and write a separated result file
     pydic.init(filepath+'/*.bmp', correl_wind_size,
                correl_grid_size, "result.dic")
-    
-    
+
+
     # and read the result file for computing strain and displacement field
     # from the result file
-    
+
     pydic.read_dic_file('result.dic', interpolation='spline', strain_type='cauchy',
                         save_image=True, scale_disp=10, scale_grid=25,
                         meta_info_file='D:/College/MEEN 401-402/DIC/meta-data.txt')
-    
-    
+
+
     #  ====== OR RUN PYDIC TO COMPUTE DISPLACEMENT AND STRAIN FIELDS
     # (WITH UNSTRUCTURED GRID OPTION)
     # note that you can't use the 'spline' or the 'raw' interpolation with
@@ -135,13 +136,11 @@ elif testChoice == 'three' or 'tensile':
     pydic.read_dic_file('result.dic', interpolation='cubic', save_image=True,
                         scale_disp=10, scale_grid=25)
 
-
     #  ====== RESULTS
     # Now you can go in the 'img/pydic' directory to see the results :
     # - the 'disp', 'grid' and 'marker' directories contain image files
     # - the 'result' directory contain raw text csv file where displacement
     # and strain fields are written
-
 
     # ======= STANDARD POST-TREATMENT : STRAIN FIELD MAP PLOTTING
     # the pydic.grid_list is a list that contains all the correlated grids
@@ -156,7 +155,7 @@ elif testChoice == 'three' or 'tensile':
     # now extract the main average strains on xx and yy
     # - first, we need to reduce the interest zone where the
     # average values are computed
-if textChoice == 'tensile':
+if testChoice == 'tensile':
     test = pydic.grid_list[0].size_x/4
 
     x_range = range(int(pydic.grid_list[0].size_x/4),
@@ -187,9 +186,9 @@ elif testChoice == 'threept':
 if testChoice == 'hard':
     force = max(force)
     D = 7/32
-    hardness = force/(math.pi*D/2*(D-sqrt(D**2-diam**2)))
+    hardness = force/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))
     print(hardness)
-    disp.saveData(filepath, seconds, force, hardness)
+    disp.saveData(filepath, lb=force, d=diam, hardness=hardness)
 elif testChoice == 'three' or 'tensile':
     '''
     forcelen = len(force)
@@ -212,7 +211,7 @@ elif testChoice == 'three' or 'tensile':
     stress = np.zeros(strainlen)
     seconds = np.linspace(0, sec, (strainlen+1))
 
-    disp.saveData(filepath=filepath, seconds=seconds, force=force, stress=stress, strain=strain)
+    disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
 
 
 '''

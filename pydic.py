@@ -77,11 +77,7 @@ class Display:
         self.buttBox.grid(row=1, column=0)
         self.var = tk.IntVar()
         self.test = 'none'
-    #    try:
-    #        self.ser = serial.Serial(self.port, 1000000)
-    #    except serial.SerialException:
-    #        print("Check the COM port or reload the console.")
-        self.force = []
+        self.psi = []
         self.seconds = []
         self.data = 'not collected'
 
@@ -145,22 +141,22 @@ class Display:
 
     def getText(self, text, example):
         try:
-            self.textBox.destroy()
+            self.buttBox.destroy()
         except tk.TclError:
             print('\nWindow Closed.\n')
             sys.exit()
         except AttributeError:
-            self.buttBox.destroy()
-        self.textBox = tk.Frame(self.main)
-        self.textBox.grid(row=1, column=0)
-        prompt = tk.Label(self.textBox, text=text)
+            pass
+        self.buttBox = tk.Frame(self.main)
+        self.buttBox.grid(row=1, column=0)
+        prompt = tk.Label(self.buttBox, text=text)
         prompt.pack(side=tk.LEFT)
 
         def save_text(event):  # function for when enter is pressed
             self.textOut = self.text_entry.get()
             self.var.set(1)
 
-        self.text_entry = tk.Entry(self.textBox)
+        self.text_entry = tk.Entry(self.buttBox)
         self.text_entry.pack(side=tk.RIGHT)
         self.text_entry.insert(0, example)
         self.text_entry.bind("<Return>", save_text)
@@ -170,7 +166,6 @@ class Display:
     def recording(self):
         try:
             self.buttBox.destroy()
-            self.textBox.destroy()
         except tk.TclError:
             print('\nWindow Closed.\n')
             sys.exit()
@@ -186,46 +181,29 @@ class Display:
         self.startButt.bind("<Button-1>", self.startRec)
         self.stopButt.bind("<Button-1>", self.stopRec)
         while self.running:
-            b = self.ser.readline()
-  #          time.sleep(0.1)
-            print(b)
+            try:
+                b = self.ser.readline()
+            except TypeError:
+                pass
             try:
                 str_rn = b.decode()
                 string = str_rn.rstrip()
-
                 result = re.match(MatchExpr, string)
-
                 if result is None:
                     print(f"Illegal string: {string}")
                 else:
                     secondflt = float(result[1])
-                    forceflt = float(result[2])
-                    encoderCunt = float(result[3])
-                    print(encoderCunt)
-
-                    if forceflt >= 5:
+                    psiflt = float(result[2])
+                    encoderCount = float(result[3])
+                    if psiflt >= 2 and secondflt > self.seconds[-1]+0.09:
                         self.seconds.append(secondflt)
-                        self.force.append(forceflt)
-                # try:
-                #     secondsstr, forcestr = string.split(",")
-                #     secondsflt = float(secondsstr)
-                #     forceflt = float(forcestr)
-                #     if forceflt >= 5:
-                #         self.seconds.append(secondsflt)
-                #         self.force.append(forceflt)
-                # except ValueError:
-                #     pass
+                        self.psi.append(psiflt)
             except UnicodeDecodeError:
-                print('Click record again if not recording')
-            print("Recording Force...")
-            print(self.force)
+                print('Click record again if not recording or check COM port and rerun script')
         try:
             self.ser.close()
         except AttributeError:
             pass
-        if len(self.seconds) > 1:
-            del self.seconds[-1]
-            del self.force[-1]
         self.nextButt.wait_variable(self.var)
         try:
             self.main.tk.mainloop()
@@ -237,8 +215,8 @@ class Display:
     def startRec(self, event):
         self.running = True
         self.var.set(1)
-        self.force = []
-        self.seconds = []
+        self.psi = []
+        self.seconds = [0]
         try:
             self.ser = serial.Serial(self.port, 2000000)
             t = threading.Thread(target=self.recording)
@@ -264,7 +242,7 @@ class Display:
         self.nextButt.grid(row=0, column=2, ipadx=20, padx=10, pady=10)
 
     def dataOut(self):
-        return self.seconds, self.force
+        return self.seconds, self.psi
 
     def dataPlot(self, stress, strain, seconds, force):
         self.stress = stress
@@ -303,14 +281,15 @@ class Display:
         time.sleep(3)
         self.main.destroy()
 
-    def saveData(self, *args, **kwargs):
+    def saveData(self, filepath, **kwargs):
         """write a raw csv file"""
         name = filepath + "/Final Data.csv"
         f = open(name, 'w')
         index = 0
-        if self.test == 'hard':
+        if 'hardness' in kwargs:
+            print('reee')
             f.write("Max Force, Diameter, Hardness\n")
-            f.write(str(force) + ',' + str(diam) + ',' + str(hardness) + '\n')
+            f.write(str(lb) + ',' + str(d) + ',' + str(hardness) + '\n')
         else:
             f.write("Index, Time, Force (lb), Stress (psi), Strain\n")
             for i in range(len(strain)):
