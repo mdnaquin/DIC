@@ -223,14 +223,14 @@ class Display:
     def startRec(self, event):
         self.running = True
         self.var.set(1)
-        self.psi = []
+        self.psi = [0]
         self.seconds = [0]
         try:
             self.ser = serial.Serial(self.port, 2000000)
             t = threading.Thread(target=self.recording)
             t.start()
         except serial.serialutil.SerialException:
-            print("If not already recording, press record again.")
+            print("Check the COM port and rerun the script.")
 
     def doneRec(self, event):
         self.var.set(1)
@@ -258,7 +258,7 @@ class Display:
         self.strain = strain
         self.seconds = seconds
         self.force = force
-        scatterboi = plt.Figure(figsize=(21, 5))
+        scatterboi = plt.Figure(figsize=(15, 5))
         fvt = scatterboi.add_subplot(131)  # force vs time plot
         fvt.plot(self.seconds, self.force, 'o', color='black')
         fvt.set_ylabel('Force (N)')
@@ -278,7 +278,6 @@ class Display:
         canvas = FigureCanvasTkAgg(scatterboi, master=self.topBox)
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH)
 
-        self.ser.close()
         self.closeButt = tk.Button(self.buttBox, text="Close", height=2,
                                    command=lambda: self.var.set(1))
         self.closeButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
@@ -311,6 +310,10 @@ class Display:
                         + ',' + str(stress[i]) + ',' + str(strain[i]) + '\n')
                 index = index + 1
         f.close()
+        try:
+            self.ser.close()
+        except serial.serialutil.SerialException:
+            pass
 
 
 class grid:

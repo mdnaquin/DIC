@@ -54,9 +54,9 @@ def getFrame(sec):
     return hasFrames
 
 
-pydic = imp.load_source('pydic', 'C:/Users/Matthew/Documents/GitHub/DIC/pydic.py')
+pydic = imp.load_source('pydic', 'C:/Users/mdnaq_000/Documents/GitHub/DIC/pydic.py')
 disp = Display()
-com = disp.getText('Please enter the correct COM port', 'COM5')
+com = disp.getText('Please enter the correct COM port', 'COM3')
 testChoice = disp.chooseTest(com)
 tp = 'none'
 
@@ -72,11 +72,13 @@ disp.recording()
 seconds, psi = disp.dataOut()
 filepath = disp.getText("Filepath:", "C:/Users/mdnaq_000/Downloads/DIC/PS1")
 psi = np.array(psi)
+A = 2*math.pi*(25/25.4)**2  # piston bore area in inches
+a = 2*math.pi*(10/25.4)**2  # piston neck area in inches
 
 if testChoice == 'tensile':
-    force = (psi/((50/25.4)**2))*4.44822  # convert psi to Newtons
+    force = (psi*A)*4.44822  # convert psi to Newtons
 elif testChoice == 'hard' or 'three':
-    force = (psi/(((50-20)/25.4)**2))*4.44822  # convert psi to Newtons
+    force = (psi*(A-a))*4.44822  # convert psi to Newtons
 if testChoice == 'hard':
     diam = float(disp.getText('Please enter the indent diameter in millimeters', '0.1'))
 elif testChoice == 'three' or 'tensile':
@@ -88,6 +90,7 @@ elif testChoice == 'three' or 'tensile':
     vidcap = cv2.VideoCapture(filepath+"/"+vidName)
 
     sec = 0
+    '''
     frameRate = 1  # //it will capture image in each X seconds
     count = 1001
     success = getFrame(sec)
@@ -103,7 +106,7 @@ elif testChoice == 'three' or 'tensile':
         sec = seconds[i]
         sec = round(sec, 2)
         getFrame(sec)
-    '''
+
 
     #  ====== RUN PYDIC TO COMPUTE DISPLACEMENT AND STRAIN FIELDS (STRUCTURED GRID)
     correl_wind_size = (80, 80)  # the size in pixel of the correlation windows
@@ -191,6 +194,7 @@ if testChoice == 'hard':
     disp.saveData(filepath, force=max(force), diam=diam, hardness=hardness)
 elif testChoice == 'three' or 'tensile':
 
+    force = force.tolist()
     forcelen = len(force)
     if forcelen > strainlen:
         diff = forcelen - strainlen
@@ -202,9 +206,9 @@ elif testChoice == 'three' or 'tensile':
         for i in range(diff):
             del ave_strain_yy[-1]
 
-#    force = np.array(force)
+    force = np.array(force)
     stress = force/(width * thic)  # stress in MPa
-    disp = Display(com)
+    disp = Display()
     disp.dataPlot(stress, ave_strain_yy, seconds, force)
     disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
 '''
