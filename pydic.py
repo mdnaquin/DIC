@@ -144,6 +144,10 @@ class Display:
         self.hardButt.wait_variable(self.var)
         return self.test
 
+    def getFile(self):
+        filename = tk.filedialog.askopenfilename()
+        return filename
+
     def getText(self, text, example):
         try:
             self.buttBox.destroy()
@@ -161,6 +165,12 @@ class Display:
             self.textOut = self.text_entry.get()
             self.var.set(1)
 
+        def on_closing():  # what to do upon closing
+            if tk.messagebox.askokcancel("Quit", "Are you sure you want to"
+                                         " quit?"):
+                self.var.set(1)
+                self.main.destroy()
+        self.main.protocol("WM_DELETE_WINDOW", on_closing)
         self.text_entry = tk.Entry(self.buttBox)
         self.text_entry.pack(side=tk.RIGHT)
         self.text_entry.insert(0, example)
@@ -233,6 +243,7 @@ class Display:
             print("Check the COM port and rerun the script.")
 
     def doneRec(self, event):
+        print('reeeeee')
         self.var.set(1)
         self.data = 'collected'
 
@@ -244,7 +255,7 @@ class Display:
             pass
         self.nextButt = tk.Button(self.buttBox, text="Done With Force",
                                   height=2)
-        if len(self.seconds) > 1:
+        if 1 == 1:  # len(self.seconds) < 1:    change back later
             self.nextButt.bind("<Button-1>", self.doneRec)
         else:
             self.nextButt = tk.Button(self.buttBox, text="Done With Force", height=2, command=lambda: print("Please collect force data first"))
@@ -292,7 +303,7 @@ class Display:
 
     def saveData(self, filepath, **kwargs):
         """write a raw csv file"""
-        name = filepath + "/Final Data.csv"
+        name = filepath + "Final Data.csv"
         f = open(name, 'w')
         index = 0
         if 'hardness' in kwargs:

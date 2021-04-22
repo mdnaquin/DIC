@@ -50,13 +50,13 @@ def getFrame(sec):
     vidcap.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
     hasFrames, image = vidcap.read()
     if hasFrames:
-        cv2.imwrite(filepath+"/image"+str(count)+".jpg", image)  # save image
+        cv2.imwrite(fp +"image"+str(count)+".jpg", image)  # save image
     return hasFrames
 
 
-pydic = imp.load_source('pydic', 'C:/Users/mdnaq_000/Documents/GitHub/DIC/pydic.py')
+pydic = imp.load_source('pydic', 'C:/Users/Matthew/Documents/GitHub/DIC/pydic.py')
 disp = Display()
-com = disp.getText('Please enter the correct COM port', 'COM3')
+com = disp.getText('Please enter the correct COM port', 'COM4')
 testChoice = disp.chooseTest(com)
 tp = 'none'
 
@@ -70,7 +70,12 @@ if testChoice == 'three' and tp == 'circ':
 
 disp.recording()
 seconds, psi = disp.dataOut()
-filepath = disp.getText("Filepath:", "C:/Users/mdnaq_000/Downloads/DIC/PS1")
+filepath = disp.getFile()
+filesplit = filepath.split('/')
+fp = ''
+del filesplit[-1]
+for i in range(len(filesplit)):
+    fp = fp + filesplit[i] + '/'
 psi = np.array(psi)
 A = 2*math.pi*(25/25.4)**2  # piston bore area in inches
 a = 2*math.pi*(10/25.4)**2  # piston neck area in inches
@@ -87,7 +92,7 @@ elif testChoice == 'three' or 'tensile':
 
     # turn imported video into pictures
 
-    vidcap = cv2.VideoCapture(filepath+"/"+vidName)
+    vidcap = cv2.VideoCapture(fp + vidName)
 
     sec = 0
     '''
@@ -107,14 +112,13 @@ elif testChoice == 'three' or 'tensile':
         sec = round(sec, 2)
         getFrame(sec)
 
-
     #  ====== RUN PYDIC TO COMPUTE DISPLACEMENT AND STRAIN FIELDS (STRUCTURED GRID)
     correl_wind_size = (80, 80)  # the size in pixel of the correlation windows
     correl_grid_size = (20, 20)  # the size in pixel of the interval (dx,dy)
     # of the correlation grid
     '''
     # read image series and write a separated result file
-    pydic.init(filepath+'/*.bmp', correl_wind_size,
+    pydic.init(fp+'*.bmp', correl_wind_size,
                correl_grid_size, "result.dic")
 
 
@@ -133,7 +137,7 @@ elif testChoice == 'three' or 'tensile':
     # unstructured grid options instead of the aligned grid
     '''
 
-    pydic.init(filepath+'/*.jpg', correl_wind_size,
+    pydic.init(fp + '*.jpg', correl_wind_size,
                correl_grid_size, "result.dic", unstructured_grid=(20, 5))
 
     pydic.read_dic_file('result.dic', interpolation='cubic', save_image=True,
@@ -191,7 +195,7 @@ if testChoice == 'hard':
     load = (max(force))/9.80665  # get load in kg
     D = (7/32)*25.4  # ball bearing diam in mm
     hardness = load/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))  # calculate BH
-    disp.saveData(filepath, force=max(force), diam=diam, hardness=hardness)
+    disp.saveData(fp, force=max(force), diam=diam, hardness=hardness)
 elif testChoice == 'three' or 'tensile':
 
     force = force.tolist()
@@ -210,7 +214,7 @@ elif testChoice == 'three' or 'tensile':
     stress = force/(width * thic)  # stress in MPa
     disp = Display()
     disp.dataPlot(stress, ave_strain_yy, seconds, force)
-    disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
+    disp.saveData(fp, seconds=seconds, force=force, stress=stress, strain=strain)
 '''
     force = np.zeros(strainlen)
     stress = np.zeros(strainlen)
