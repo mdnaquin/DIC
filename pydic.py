@@ -45,6 +45,7 @@ import scipy.interpolate
 import copy
 import os
 import tkinter as tk
+from tkinter import ttk
 import serial
 import time
 import threading
@@ -56,10 +57,10 @@ grid_list = []  # saving grid here
 MatchExpr = "(\d+\.?\d*),(\d+\.?\d*),(-?\d+)"
 
 
-class WrappingLabel(tk.Label):
+class WrappingLabel(ttk.Label):
     '''a type of label that automatically adjusts the wrap to the size'''
     def __init__(self, master=None, **kwargs):
-        tk.Label.__init__(self, master, **kwargs)
+        ttk.Label.__init__(self, master, **kwargs)
         self.bind('<Configure>', lambda e:
                   self.config(wraplength=self.winfo_width()))
 
@@ -71,15 +72,41 @@ class Display:
         self.main = tk.Tk()
         self.main.wm_title("DIC Stuff")
         self.port = 'none'
+        '''
         self.topBox = tk.Frame(self.main, width=500, height=500)
         self.buttBox = tk.Frame(self.main)
         self.topBox.grid(row=0, column=0)
         self.buttBox.grid(row=1, column=0)
+        '''
         self.var = tk.IntVar()
         self.test = 'none'
         self.psi = []
         self.seconds = []
         self.data = 'not collected'
+        # tab things start here
+
+        def on_closing():  # what to do upon closing
+            if tk.messagebox.askokcancel("Quit", "Are you sure you want to"
+                                         " quit?"):
+                self.var.set(1)
+                self.main.destroy()
+        self.main.protocol("WM_DELETE_WINDOW", on_closing)
+        self.tabControl = ttk.Notebook(self.main)
+        self.tensileTab = tk.Frame(self.tabControl)
+        self.tprectTab = tk.Frame(self.tabControl)
+        self.tpcircTab = tk.Frame(self.tabControl)
+        self.hardTab = tk.Frame(self.tabControl)
+        self.tabControl.add(self.tensileTab, text='Tensile Test')
+        self.tabControl.add(self.tprectTab, text='3 Point Bending Test (rectangular)')
+        self.tabControl.add(self.tpcircTab, text='3 Point Bending Test (circular)')
+        self.tabControl.add(self.hardTab, text='Hardness Test')
+        self.tabControl.pack(expand=1, fill="both")
+        WrappingLabel(self.tensileTab, text="tensile testing info").grid(column=0, row=0, padx=30, pady=30)
+        WrappingLabel(self.tprectTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30)
+        WrappingLabel(self.tpcircTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30)
+        WrappingLabel(self.hardTab, text="hardness testing info").grid(column=0, row=0, padx=30, pady=30)
+        self.recording(self.tensileTab)
+        self.main.mainloop()
 
     def threeFunc(self, event):
         self.var.set(1)
@@ -129,7 +156,7 @@ class Display:
             sys.exit()
         self.buttBox = tk.Frame(self.main)
         self.buttBox.grid(row=1, column=0)
-        self.threeButt = tk.Button(self.buttBox, text="3-point Bending",
+        self.threeButt = tk.Button(self.buttBox, text="3-Point Bending",
                                    height=2)
         self.tensileButt = tk.Button(self.buttBox, text="Tensile Test",
                                      height=2)
@@ -178,7 +205,48 @@ class Display:
         self.text_entry.wait_variable(self.var)
         return self.textOut
 
-    def recording(self):
+    def recording(self, tab):
+        self.startButt = ttk.Button(tab, text="Record Force")
+        self.stopButt = ttk.Button(tab, text="Stop Recording")
+        self.nextButt = ttk.Button(tab, text="Done With Force")
+        self.startButt.grid(row=1, column=0, ipadx=20, padx=10, pady=10)
+        self.stopButt.grid(row=1, column=1, ipadx=20, padx=10, pady=10)
+        self.nextButt.grid(row=1, column=2, ipadx=20, padx=10, pady=10)
+        self.startButt.bind("<Button-1>", self.startRec)
+        self.stopButt.bind("<Button-1>", self.stopRec)
+        while self.running:
+            try:
+                b = self.ser.readline()
+            except TypeError:
+                pass
+            try:
+                str_rn = b.decode()
+                string = str_rn.rstrip()
+                result = re.match(MatchExpr, string)
+                if result is None:
+                    print(f"Illegal string: {string}")
+                else:
+                    secondflt = float(result[1])
+                    psiflt = float(result[2])
+                    encoderCount = float(result[3])
+                    if psiflt >= 2 and secondflt > self.seconds[-1]+0.09:
+                        self.seconds.append(secondflt)
+                        self.psi.append(psiflt)
+            except UnicodeDecodeError:
+                print('Click record again if not recording or check COM port and rerun script')
+        try:
+            self.ser.close()
+        except AttributeError:
+            pass
+        self.nextButt.wait_variable(self.var)
+        try:
+            self.main.tk.mainloop()
+        except RuntimeError:
+            pass
+        if self.data == 'collected':
+            self.main.quit()
+
+    def recording2(self):
         try:
             self.buttBox.destroy()
         except tk.TclError:
@@ -296,7 +364,7 @@ class Display:
         self.main.destroy()
 
     def closeData(self):
-        prompt = WrappingLabel(self.topBox, text='This window will close while strain is calculated')
+        # prompt = WrappingLabel(self.topBox, text='This window will close while strain is calculated')
         prompt.pack(fill=tk.X)
         time.sleep(3)
         self.main.destroy()
