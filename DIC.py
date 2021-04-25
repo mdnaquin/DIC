@@ -56,6 +56,7 @@ def getFrame(sec):
 
 pydic = imp.load_source('pydic', 'C:/Users/Matthew/Documents/GitHub/DIC/pydic.py')
 disp = Display()
+'''
 com = disp.getText('Please enter the correct COM port', 'COM4')
 testChoice = disp.chooseTest(com)
 tp = 'none'
@@ -67,32 +68,32 @@ if testChoice == 'three' and tp == 'rect' or testChoice == 'tensile':
     thic = float(disp.getText('Please enter the specimen thickness in millimeters', '3.1'))
 if testChoice == 'three' and tp == 'circ':
     diam = float(disp.getText('Please enter the specimen diameter in millimeters', '3.0'))
-
+'''
 disp.recording()
-seconds, psi = disp.dataOut()
-filepath = disp.getFile()
-filesplit = filepath.split('/')
-fp = ''
+seconds, psi, vidName, diam, height, width, thic, ind, testChoice = disp.dataOut()
+# filepath = disp.getFile()
+filesplit = vidName.split('/')
+filepath = ''
 del filesplit[-1]
 for i in range(len(filesplit)):
-    fp = fp + filesplit[i] + '/'
+    filepath = filepath + filesplit[i] + '/'
 psi = np.array(psi)
 A = 2*math.pi*(25/25.4)**2  # piston bore area in inches
 a = 2*math.pi*(10/25.4)**2  # piston neck area in inches
 
 if testChoice == 'tensile':
     force = (psi*A)*4.44822  # convert psi to Newtons
-elif testChoice == 'hard' or 'three':
+elif testChoice == 'hard' or 'tprect' or 'tpcirc':
     force = (psi*(A-a))*4.44822  # convert psi to Newtons
 if testChoice == 'hard':
     diam = float(disp.getText('Please enter the indent diameter in millimeters', '0.1'))
-elif testChoice == 'three' or 'tensile':
-    vidName = disp.getText("Video File Name:", "PS1.mp4")
-    disp.closeData()
+elif testChoice == 'tprect' or 'tpcirc' or 'tensile':
+ #   vidName = disp.getText("Video File Name:", "PS1.mp4")
+ #   disp.closeData()
 
     # turn imported video into pictures
 
-    vidcap = cv2.VideoCapture(fp + vidName)
+    vidcap = cv2.VideoCapture(vidName)
 
     sec = 0
     '''
@@ -137,7 +138,7 @@ elif testChoice == 'three' or 'tensile':
     # unstructured grid options instead of the aligned grid
     '''
 
-    pydic.init(fp + '*.jpg', correl_wind_size,
+    pydic.init(filepath + '*.jpg', correl_wind_size,
                correl_grid_size, "result.dic", unstructured_grid=(20, 5))
 
     pydic.read_dic_file('result.dic', interpolation='cubic', save_image=True,
@@ -176,13 +177,13 @@ if testChoice == 'tensile':
                               for grid in pydic.grid_list])
     strain = ave_strain_yy.tolist()
     strainlen = len(ave_strain_yy)
-elif testChoice == 'threept':
+elif testChoice == 'tprect' or 'tpcirc':
     L = 4.5*25.4  # L is the distance between the supports
-    if tp == 'rect':  # rectangluar cross section
+    if testChoice == 'tprect':  # rectangluar cross section
         # compute the maximal normal stress with this force
         # the maximal normal stress is located in the lower plane
         max_stress = (1.5) * force * L / (width * thic ** 2)  # stress in MPa
-    elif tp == 'circ':  # circular cross section
+    elif testChoice == 'tpcirc':  # circular cross section
         max_stress = force * L / (math.pi*((diam/2) ** 3))  # stress in MPa
     # now extract the maximal average strains on the lower plane of the sample
     x_range = range(1, pydic.grid_list[0].size_x - 1)
@@ -195,8 +196,8 @@ if testChoice == 'hard':
     load = (max(force))/9.80665  # get load in kg
     D = (7/32)*25.4  # ball bearing diam in mm
     hardness = load/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))  # calculate BH
-    disp.saveData(fp, force=max(force), diam=diam, hardness=hardness)
-elif testChoice == 'three' or 'tensile':
+    disp.saveData(filepath, force=max(force), diam=diam, hardness=hardness)
+elif testChoice == 'tprect' or 'tpcirc' or 'tensile':
 
     force = force.tolist()
     forcelen = len(force)
@@ -214,7 +215,7 @@ elif testChoice == 'three' or 'tensile':
     stress = force/(width * thic)  # stress in MPa
     disp = Display()
     disp.dataPlot(stress, ave_strain_yy, seconds, force)
-    disp.saveData(fp, seconds=seconds, force=force, stress=stress, strain=strain)
+    disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
 '''
     force = np.zeros(strainlen)
     stress = np.zeros(strainlen)

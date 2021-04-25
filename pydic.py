@@ -47,7 +47,6 @@ import os
 import tkinter as tk
 from tkinter import ttk
 import serial
-import time
 import threading
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import re
@@ -80,17 +79,22 @@ class Display:
         '''
         self.var = tk.IntVar()
         self.test = 'none'
-        self.psi = []
-        self.seconds = []
+        self.psi = [0]
+        self.seconds = [0]
         self.data = 'not collected'
         # tab things start here
+        self.filename = ''
 
         def on_closing():  # what to do upon closing
             if tk.messagebox.askokcancel("Quit", "Are you sure you want to"
                                          " quit?"):
                 self.var.set(1)
                 self.main.destroy()
+                print('\nWindow Closed.\n')
+                # sys.exit()
+
         self.main.protocol("WM_DELETE_WINDOW", on_closing)
+        # making up tabs
         self.tabControl = ttk.Notebook(self.main)
         self.tensileTab = tk.Frame(self.tabControl)
         self.tprectTab = tk.Frame(self.tabControl)
@@ -101,125 +105,114 @@ class Display:
         self.tabControl.add(self.tpcircTab, text='3 Point Bending Test (circular)')
         self.tabControl.add(self.hardTab, text='Hardness Test')
         self.tabControl.pack(expand=1, fill="both")
-        WrappingLabel(self.tensileTab, text="tensile testing info").grid(column=0, row=0, padx=30, pady=30)
-        WrappingLabel(self.tprectTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30)
-        WrappingLabel(self.tpcircTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30)
-        WrappingLabel(self.hardTab, text="hardness testing info").grid(column=0, row=0, padx=30, pady=30)
-        self.recording(self.tensileTab)
+        # text for tabs
+        WrappingLabel(self.tensileTab, text="tensile testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
+        WrappingLabel(self.tprectTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
+        WrappingLabel(self.tpcircTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
+        WrappingLabel(self.hardTab, text="hardness testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
+        self.tabSetup(self.tensileTab)
+        self.tabSetup(self.tprectTab)
+        self.tabSetup(self.tpcircTab)
+        self.tabSetup(self.hardTab)
         self.main.mainloop()
 
-    def threeFunc(self, event):
-        self.var.set(1)
-        self.test = 'three'
+    def selectVideo(self, event):
+        self.filename = tk.filedialog.askopenfilename()
 
+    def selectFile(self, event):
+        self.filename = tk.filedialog.askdirectory()
+
+    # functions for "Get Results" button
     def tensileFunc(self, event):
-        self.var.set(1)
-        self.test = 'tensile'
+        if tk.messagebox.askokcancel("Continue", "This will close this window"
+                                     " so make sure everything is correct"
+                                     " before proceeding."):
+            self.test = 'tensile'
+            self.getStuff()
+
+    def tprectFunc(self, event):
+        if tk.messagebox.askokcancel("Continue", "This will close this window"
+                                     " so make sure everything is correct"
+                                     " before proceeding."):
+            self.test = 'tprect'
+            self.getStuff()
+
+    def tpcircFunc(self, event):
+        if tk.messagebox.askokcancel("Continue", "This will close this window"
+                                     " so make sure everything is correct"
+                                     " before proceeding."):
+            self.test = 'tpcirc'
+            self.getStuff()
 
     def hardFunc(self, event):
-        self.var.set(1)
-        self.test = 'hard'
+        if tk.messagebox.askokcancel("Continue", "This will close this window"
+                                     " so make sure everything is correct"
+                                     " before proceeding."):
+            self.test = 'hard'
+            self.getStuff()
 
-    def rectFunc(self, event):
-        self.var.set(1)
-        self.tp = 'rect'
-
-    def circFunc(self, event):
-        self.var.set(1)
-        self.tp = 'circ'
-
-    def tpType(self):
-        try:
-            self.buttBox.destroy()
-        except tk.TclError:
-            print('\nWindow Closed.\n')
-            sys.exit()
-        self.buttBox = tk.Frame(self.main)
-        self.buttBox.grid(row=1, column=0)
-        self.rectButt = tk.Button(self.buttBox,
-                                  text="Rectangular Cross Section", height=2)
-        self.circButt = tk.Button(self.buttBox,
-                                  text="Circular Cross Section", height=2)
-        self.rectButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
-        self.circButt.grid(row=0, column=1, ipadx=20, padx=10, pady=10)
-        self.rectButt.bind("<Button-1>", self.rectFunc)
-        self.circButt.bind("<Button-1>", self.circFunc)
-        self.rectButt.wait_variable(self.var)
-        return self.tp
-
-    def chooseTest(self, com):
-        self.port = com
-        try:
-            self.buttBox.destroy()
-        except tk.TclError:
-            print('\nWindow Closed.\n')
-            sys.exit()
-        self.buttBox = tk.Frame(self.main)
-        self.buttBox.grid(row=1, column=0)
-        self.threeButt = tk.Button(self.buttBox, text="3-Point Bending",
-                                   height=2)
-        self.tensileButt = tk.Button(self.buttBox, text="Tensile Test",
-                                     height=2)
-        self.hardButt = tk.Button(self.buttBox, text="Hardness Test",
-                                  height=2)
-        self.threeButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
-        self.tensileButt.grid(row=0, column=1, ipadx=20, padx=10, pady=10)
-        self.hardButt.grid(row=0, column=2, ipadx=20, padx=10, pady=10)
-        self.threeButt.bind("<Button-1>", self.threeFunc)
-        self.tensileButt.bind("<Button-1>", self.tensileFunc)
-        self.hardButt.bind("<Button-1>", self.hardFunc)
-        self.hardButt.wait_variable(self.var)
-        return self.test
-
-    def getFile(self):
-        filename = tk.filedialog.askopenfilename()
-        return filename
-
-    def getText(self, text, example):
-        try:
-            self.buttBox.destroy()
-        except tk.TclError:
-            print('\nWindow Closed.\n')
-            sys.exit()
-        except AttributeError:
-            pass
-        self.buttBox = tk.Frame(self.main)
-        self.buttBox.grid(row=1, column=0)
-        prompt = tk.Label(self.buttBox, text=text)
-        prompt.pack(side=tk.LEFT)
-
-        def save_text(event):  # function for when enter is pressed
-            self.textOut = self.text_entry.get()
-            self.var.set(1)
-
-        def on_closing():  # what to do upon closing
-            if tk.messagebox.askokcancel("Quit", "Are you sure you want to"
-                                         " quit?"):
-                self.var.set(1)
+    def getStuff(self):
+        self.thic = self.thicEntry.get()
+        self.diam = self.diamEntry.get()
+        self.height = self.heightEntry.get()
+        self.width = self.widthEntry.get()
+        self.ind = self.indEntry.get()
+        if self.filename != '':
+            if self.seconds != [0]:
                 self.main.destroy()
-        self.main.protocol("WM_DELETE_WINDOW", on_closing)
-        self.text_entry = tk.Entry(self.buttBox)
-        self.text_entry.pack(side=tk.RIGHT)
-        self.text_entry.insert(0, example)
-        self.text_entry.bind("<Return>", save_text)
-        self.text_entry.wait_variable(self.var)
-        return self.textOut
+            else:
+                print('Please collect force data first.')
+        else:
+            print('Please select a file first.')
 
-    def recording(self, tab):
-        self.startButt = ttk.Button(tab, text="Record Force")
-        self.stopButt = ttk.Button(tab, text="Stop Recording")
-        self.nextButt = ttk.Button(tab, text="Done With Force")
-        self.startButt.grid(row=1, column=0, ipadx=20, padx=10, pady=10)
-        self.stopButt.grid(row=1, column=1, ipadx=20, padx=10, pady=10)
-        self.nextButt.grid(row=1, column=2, ipadx=20, padx=10, pady=10)
+    def dataOut(self):  # outputs data into other script
+        return (self.seconds, self.psi, self.filename, self.diam, self.height,
+                self.width, self.thic, self.ind, self.test)
+
+    def tabSetup(self, tab):  # make buttons and text entry boxes for each tab
+        self.startButt = tk.Button(tab, text="Record Force", height=2)
+        self.stopButt = tk.Button(tab, text="Stop Recording", height=2)
+        self.resultButt = tk.Button(tab, text="Get Results", height=2)
+        if tab == self.hardTab:
+            self.selectButt = tk.Button(tab, text="Select File", height=2)
+            self.selectButt.bind("<Button-1>", self.selectFile)
+        else:
+            self.selectButt = tk.Button(tab, text="Select Video", height=2)
+            self.selectButt.bind("<Button-1>", self.selectVideo)
+        self.startButt.grid(row=10, column=0, ipadx=20, padx=10, pady=10)
+        self.stopButt.grid(row=10, column=1, ipadx=20, padx=10, pady=10)
+        self.selectButt.grid(row=10, column=4, ipadx=20, padx=10, pady=10)
+        self.resultButt.grid(row=10, column=5, ipadx=20, padx=10, pady=10)
         self.startButt.bind("<Button-1>", self.startRec)
         self.stopButt.bind("<Button-1>", self.stopRec)
+        self.portEntry = self.getText("COM Port", "COM3", tab, 0)
+        if tab == self.tensileTab or tab == self.tprectTab:
+            self.widthEntry = self.getText("Specimen Width in mm", "10.0", tab, 1)
+            if tab == self.tensileTab:
+                self.thicEntry = self.getText("Specimen Thickness in mm", "10.0", tab, 2)
+                self.resultButt.bind("<Button-1>", self.tensileFunc)
+            else:
+                self.heightEntry = self.getText("Specimen Height in mm", "10.0", tab, 2)
+                self.resultButt.bind("<Button-1>", self.tprectFunc)
+        elif tab == self.tpcircTab:
+            self.diamEntry = self.getText("Specimen Diameter in mm", "10.0", tab, 1)
+            self.resultButt.bind("<Button-1>", self.tpcircFunc)
+        elif tab == self.hardTab:
+            self.indEntry = self.getText("Indent Diameter in mm", "10.0", tab, 1)
+            self.resultButt.bind("<Button-1>", self.hardFunc)
+
+    def getText(self, text, example, tab, position):
+        prompt = tk.Label(tab, text=text)
+        prompt.grid(row=position, column=4, pady=10)
+        info = tk.Entry(tab)
+        info.grid(row=position, column=5)
+        info.insert(0, example)
+        return info
+
+    def recording(self):
         while self.running:
             try:
                 b = self.ser.readline()
-            except TypeError:
-                pass
-            try:
                 str_rn = b.decode()
                 string = str_rn.rstrip()
                 result = re.match(MatchExpr, string)
@@ -232,86 +225,37 @@ class Display:
                     if psiflt >= 2 and secondflt > self.seconds[-1]+0.09:
                         self.seconds.append(secondflt)
                         self.psi.append(psiflt)
-            except UnicodeDecodeError:
-                print('Click record again if not recording or check COM port and rerun script')
-        try:
-            self.ser.close()
-        except AttributeError:
-            pass
-        self.nextButt.wait_variable(self.var)
-        try:
-            self.main.tk.mainloop()
-        except RuntimeError:
-            pass
-        if self.data == 'collected':
-            self.main.quit()
-
-    def recording2(self):
-        try:
-            self.buttBox.destroy()
-        except tk.TclError:
-            print('\nWindow Closed.\n')
-            sys.exit()
-        except RuntimeError:
-            pass
-        self.buttBox = tk.Frame(self.main)
-        self.buttBox.grid(row=1, column=0)
-        self.startButt = tk.Button(self.buttBox, text="Record Force",
-                                   height=2)
-        self.stopButt = tk.Button(self.buttBox, text="Stop Recording",
-                                  height=2)
-        self.nextButt = tk.Button(self.buttBox, text="Done With Force",
-                                  height=2)
-        self.startButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
-        self.stopButt.grid(row=0, column=1, ipadx=20, padx=10, pady=10)
-        self.startButt.bind("<Button-1>", self.startRec)
-        self.stopButt.bind("<Button-1>", self.stopRec)
-        while self.running:
-            try:
-                b = self.ser.readline()
             except TypeError:
                 pass
-            try:
-                str_rn = b.decode()
-                string = str_rn.rstrip()
-                result = re.match(MatchExpr, string)
-                if result is None:
-                    print(f"Illegal string: {string}")
-                else:
-                    secondflt = float(result[1])
-                    psiflt = float(result[2])
-                    encoderCount = float(result[3])
-                    if psiflt >= 2 and secondflt > self.seconds[-1]+0.09:
-                        self.seconds.append(secondflt)
-                        self.psi.append(psiflt)
-            except UnicodeDecodeError:
-                print('Click record again if not recording or check COM port and rerun script')
+#            except AttributeError:
+#                print('COM port not detected.')
+#                break
         try:
             self.ser.close()
         except AttributeError:
             pass
-        self.nextButt.wait_variable(self.var)
-        try:
-            self.main.tk.mainloop()
-        except RuntimeError:
-            pass
+#        try:
+#            self.main.tk.mainloop()
+#        except RuntimeError:
+#            pass
         if self.data == 'collected':
             self.main.quit()
 
     def startRec(self, event):
         self.running = True
-        self.var.set(1)
-        self.psi = [0]
-        self.seconds = [0]
         try:
+            self.port = self.portEntry.get()
             self.ser = serial.Serial(self.port, 2000000)
             t = threading.Thread(target=self.recording)
             t.start()
+            self.recording()
         except serial.serialutil.SerialException:
-            print("Check the COM port and rerun the script.")
+            print("Check the COM port.")
+        self.var.set(1)
+        self.psi = [0]
+        self.seconds = [0]
 
     def doneRec(self, event):
-        print('reeeeee')
         self.var.set(1)
         self.data = 'collected'
 
@@ -321,16 +265,11 @@ class Display:
             self.ser.close()
         except AttributeError:
             pass
-        self.nextButt = tk.Button(self.buttBox, text="Done With Force",
-                                  height=2)
-        if 1 == 1:  # len(self.seconds) < 1:    change back later
-            self.nextButt.bind("<Button-1>", self.doneRec)
+        if self.seconds != [0]:
+            print(self.seconds)
+            print("Force data obtained.")
         else:
-            self.nextButt = tk.Button(self.buttBox, text="Done With Force", height=2, command=lambda: print("Please collect force data first"))
-        self.nextButt.grid(row=0, column=2, ipadx=20, padx=10, pady=10)
-
-    def dataOut(self):
-        return self.seconds, self.psi
+            print("No force data acquired.")
 
     def dataPlot(self, stress, strain, seconds, force):
         self.stress = stress
@@ -361,12 +300,6 @@ class Display:
                                    command=lambda: self.var.set(1))
         self.closeButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
         self.closeButt.wait_variable(self.var)
-        self.main.destroy()
-
-    def closeData(self):
-        # prompt = WrappingLabel(self.topBox, text='This window will close while strain is calculated')
-        prompt.pack(fill=tk.X)
-        time.sleep(3)
         self.main.destroy()
 
     def saveData(self, filepath, **kwargs):
