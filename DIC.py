@@ -36,12 +36,12 @@
 
 
 # ====== IMPORTING MODULES
+import cv2
+import math
 from matplotlib import pyplot as plt
 import numpy as np
-from scipy import stats
-import cv2
 from pydic import Display
-import math
+from scipy import stats
 # locate the pydic module and import it
 import imp
 
@@ -49,8 +49,8 @@ import imp
 def getFrame(sec):
     vidcap.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
     hasFrames, image = vidcap.read()
-    if hasFrames:
-        cv2.imwrite(fp +"image"+str(count)+".jpg", image)  # save image
+    if hasFrames:  # save image
+        cv2.imwrite(filepath + "image" + str(count) + ".jpg", image)
     return hasFrames
 
 
@@ -195,7 +195,8 @@ elif testChoice == 'tprect' or 'tpcirc':
 if testChoice == 'hard':
     load = (max(force))/9.80665  # get load in kg
     D = (7/32)*25.4  # ball bearing diam in mm
-    hardness = load/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))  # calculate BH
+    # calculate Brinnell Hardness
+    hardness = load/(math.pi*D/2*(D-math.sqrt(D**2-diam**2)))
     disp.saveData(filepath, force=max(force), diam=diam, hardness=hardness)
 elif testChoice == 'tprect' or 'tpcirc' or 'tensile':
 

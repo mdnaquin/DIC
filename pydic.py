@@ -32,24 +32,24 @@
 # You can go to the example directory for usage examples.
 
 
-import numpy as np
+import copy
 import cv2
-import sys
-import math
 import glob
+import math
 from matplotlib import pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.widgets import Slider, Button, RadioButtons
+import numpy as np
+import os
+import re
+import scipy.interpolate
 from scipy.interpolate import griddata
 from scipy.interpolate import Rbf
-import scipy.interpolate
-import copy
-import os
+import serial
+import sys
+import threading
 import tkinter as tk
 from tkinter import ttk
-import serial
-import threading
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import re
 
 grid_list = []  # saving grid here
 
@@ -70,19 +70,11 @@ class Display:
         self.running = False
         self.main = tk.Tk()
         self.main.wm_title("DIC Stuff")
-        self.port = 'none'
-        '''
-        self.topBox = tk.Frame(self.main, width=500, height=500)
-        self.buttBox = tk.Frame(self.main)
-        self.topBox.grid(row=0, column=0)
-        self.buttBox.grid(row=1, column=0)
-        '''
         self.var = tk.IntVar()
+        self.port = 'none'
         self.test = 'none'
         self.psi = [0]
         self.seconds = [0]
-        self.data = 'not collected'
-        # tab things start here
         self.filename = ''
 
         def on_closing():  # what to do upon closing
@@ -106,10 +98,12 @@ class Display:
         self.tabControl.add(self.hardTab, text='Hardness Test')
         self.tabControl.pack(expand=1, fill="both")
         # text for tabs
-        WrappingLabel(self.tensileTab, text="tensile testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
+        tensInfo = "Howdyyyyy"
+        WrappingLabel(self.tensileTab, text=tensInfo).grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
         WrappingLabel(self.tprectTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
         WrappingLabel(self.tpcircTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
         WrappingLabel(self.hardTab, text="hardness testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
+        # setting up tabs
         self.tabSetup(self.tensileTab)
         self.tabSetup(self.tprectTab)
         self.tabSetup(self.tpcircTab)
@@ -227,19 +221,10 @@ class Display:
                         self.psi.append(psiflt)
             except TypeError:
                 pass
-#            except AttributeError:
-#                print('COM port not detected.')
-#                break
         try:
             self.ser.close()
         except AttributeError:
             pass
-#        try:
-#            self.main.tk.mainloop()
-#        except RuntimeError:
-#            pass
-        if self.data == 'collected':
-            self.main.quit()
 
     def startRec(self, event):
         self.running = True
@@ -254,10 +239,6 @@ class Display:
         self.var.set(1)
         self.psi = [0]
         self.seconds = [0]
-
-    def doneRec(self, event):
-        self.var.set(1)
-        self.data = 'collected'
 
     def stopRec(self, event):
         self.running = False
