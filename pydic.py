@@ -85,7 +85,7 @@ class Display:
                 self.var.set(1)
                 self.main.destroy()
                 print('\nWindow Closed.\n')
-                #sys.exit()
+                sys.exit()
 
         self.main.protocol("WM_DELETE_WINDOW", on_closing)
         # making up tabs
