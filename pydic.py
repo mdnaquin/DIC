@@ -57,7 +57,7 @@ MatchExpr = "(\d+\.?\d*),(\d+\.?\d*),(-?\d+)"
 
 
 class WrappingLabel(ttk.Label):
-    '''a type of label that automatically adjusts the wrap to the size'''
+    # a type of label that automatically adjusts the wrap to the frame size
     def __init__(self, master=None, **kwargs):
         ttk.Label.__init__(self, master, **kwargs)
         self.bind('<Configure>', lambda e:
@@ -76,6 +76,8 @@ class Display:
         self.psi = [0]
         self.seconds = [0]
         self.filename = ''
+        self.closingText = ("This will close this window so make sure "
+                            "everything is correct before proceeding.")
 
         def on_closing():  # what to do upon closing
             if tk.messagebox.askokcancel("Quit", "Are you sure you want to"
@@ -83,7 +85,7 @@ class Display:
                 self.var.set(1)
                 self.main.destroy()
                 print('\nWindow Closed.\n')
-                # sys.exit()
+                #sys.exit()
 
         self.main.protocol("WM_DELETE_WINDOW", on_closing)
         # making up tabs
@@ -98,7 +100,12 @@ class Display:
         self.tabControl.add(self.hardTab, text='Hardness Test')
         self.tabControl.pack(expand=1, fill="both")
         # text for tabs
-        tensInfo = "Howdyyyyy"
+        tensInfo = ("This is the tab used for tensile testing. Input the COM "
+                    "port where the arduino\n is plugged in and the specimen"
+                    "dimensions in the boxes provided. Next, collect\n the force"
+                    " data with the provided buttons. Upload and select the "
+                    "video of\n the tensile test. When everything is input "
+                    "correctly, press 'Get Results'.")
         WrappingLabel(self.tensileTab, text=tensInfo).grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
         WrappingLabel(self.tprectTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
         WrappingLabel(self.tpcircTab, text="tp bending testing info").grid(column=0, row=0, padx=30, pady=30, columnspan=3, rowspan=3)
@@ -110,42 +117,34 @@ class Display:
         self.tabSetup(self.hardTab)
         self.main.mainloop()
 
-    def selectVideo(self, event):
+    def selectVideo(self, event):  # "Select Video" button function
         self.filename = tk.filedialog.askopenfilename()
 
-    def selectFile(self, event):
+    def selectFile(self, event):  # "Select File" button function
         self.filename = tk.filedialog.askdirectory()
 
     # functions for "Get Results" button
     def tensileFunc(self, event):
-        if tk.messagebox.askokcancel("Continue", "This will close this window"
-                                     " so make sure everything is correct"
-                                     " before proceeding."):
+        if tk.messagebox.askokcancel("Continue", self.closingText):
             self.test = 'tensile'
             self.getStuff()
 
     def tprectFunc(self, event):
-        if tk.messagebox.askokcancel("Continue", "This will close this window"
-                                     " so make sure everything is correct"
-                                     " before proceeding."):
+        if tk.messagebox.askokcancel("Continue", self.closingText):
             self.test = 'tprect'
             self.getStuff()
 
     def tpcircFunc(self, event):
-        if tk.messagebox.askokcancel("Continue", "This will close this window"
-                                     " so make sure everything is correct"
-                                     " before proceeding."):
+        if tk.messagebox.askokcancel("Continue", self.closingText):
             self.test = 'tpcirc'
             self.getStuff()
 
     def hardFunc(self, event):
-        if tk.messagebox.askokcancel("Continue", "This will close this window"
-                                     " so make sure everything is correct"
-                                     " before proceeding."):
+        if tk.messagebox.askokcancel("Continue", self.closingText):
             self.test = 'hard'
             self.getStuff()
 
-    def getStuff(self):
+    def getStuff(self):  # get information from text entry boxes
         self.thic = self.thicEntry.get()
         self.diam = self.diamEntry.get()
         self.height = self.heightEntry.get()
@@ -159,7 +158,7 @@ class Display:
         else:
             print('Please select a file first.')
 
-    def dataOut(self):  # outputs data into other script
+    def dataOut(self):  # outputs data into DIC script
         return (self.seconds, self.psi, self.filename, self.diam, self.height,
                 self.width, self.thic, self.ind, self.test)
 
@@ -195,7 +194,7 @@ class Display:
             self.indEntry = self.getText("Indent Diameter in mm", "10.0", tab, 1)
             self.resultButt.bind("<Button-1>", self.hardFunc)
 
-    def getText(self, text, example, tab, position):
+    def getText(self, text, example, tab, position):  # makes text entry boxes
         prompt = tk.Label(tab, text=text)
         prompt.grid(row=position, column=4, pady=10)
         info = tk.Entry(tab)
@@ -203,7 +202,7 @@ class Display:
         info.insert(0, example)
         return info
 
-    def recording(self):
+    def recording(self):  # arduino data collection
         while self.running:
             try:
                 b = self.ser.readline()
@@ -216,7 +215,8 @@ class Display:
                     secondflt = float(result[1])
                     psiflt = float(result[2])
                     encoderCount = float(result[3])
-                    if psiflt >= 2 and secondflt > self.seconds[-1]+0.09:
+                    # last number in line below is the time between data points in seconds
+                    if psiflt >= 2 and secondflt >= self.seconds[-1]+0.10:
                         self.seconds.append(secondflt)
                         self.psi.append(psiflt)
             except TypeError:
@@ -226,7 +226,7 @@ class Display:
         except AttributeError:
             pass
 
-    def startRec(self, event):
+    def startRec(self, event):  # "Record Force" button function
         self.running = True
         try:
             self.port = self.portEntry.get()
@@ -240,7 +240,7 @@ class Display:
         self.psi = [0]
         self.seconds = [0]
 
-    def stopRec(self, event):
+    def stopRec(self, event):  # "Stop Recording" button function
         self.running = False
         try:
             self.ser.close()
@@ -252,7 +252,7 @@ class Display:
         else:
             print("No force data acquired.")
 
-    def dataPlot(self, stress, strain, seconds, force):
+    def dataPlot(self, stress, strain, seconds, force):  # makes the plots
         self.stress = stress
         self.strain = strain
         self.seconds = seconds
@@ -274,16 +274,18 @@ class Display:
         svs.set_xlabel('Strain')
         svs.set_title('Stress vs. Strain')
 
+        # put plots in GUI
         canvas = FigureCanvasTkAgg(scatterboi, master=self.topBox)
         canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH)
 
+        # close button
         self.closeButt = tk.Button(self.buttBox, text="Close", height=2,
                                    command=lambda: self.var.set(1))
         self.closeButt.grid(row=0, column=0, ipadx=20, padx=10, pady=10)
         self.closeButt.wait_variable(self.var)
         self.main.destroy()
 
-    def saveData(self, filepath, **kwargs):
+    def saveData(self, filepath, **kwargs):  # save data into a .csv file
         """write a raw csv file"""
         name = filepath + "Final Data.csv"
         f = open(name, 'w')

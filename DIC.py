@@ -44,7 +44,7 @@ from pydic import Display
 from scipy import stats
 # locate the pydic module and import it
 import imp
-
+import pydic
 
 def getFrame(sec):
     vidcap.set(cv2.CAP_PROP_POS_MSEC, sec*1000)
@@ -54,7 +54,7 @@ def getFrame(sec):
     return hasFrames
 
 
-pydic = imp.load_source('pydic', 'C:/Users/Matthew/Documents/GitHub/DIC/pydic.py')
+# pydic = imp.load_source('pydic', 'C:/Users/Matthew/Documents/GitHub/DIC/pydic.py')
 disp = Display()
 '''
 com = disp.getText('Please enter the correct COM port', 'COM4')
@@ -217,12 +217,15 @@ elif testChoice == 'tprect' or 'tpcirc' or 'tensile':
     disp = Display()
     disp.dataPlot(stress, ave_strain_yy, seconds, force)
     disp.saveData(filepath, seconds=seconds, force=force, stress=stress, strain=strain)
-'''
-    force = np.zeros(strainlen)
-    stress = np.zeros(strainlen)
-    seconds = np.linspace(0, sec, (strainlen+1))
-'''
+if testChoice == 'tensile':
+    # compute Young's modulus with scipy linear regression
+    E, intercept, r_value, p_value, std_err = stats.linregress(ave_strain_yy, stress)
+    # compute Poisson's ratio with scipy linear regression
+    Nu, intercept, r_value, p_value, std_err = stats.linregress(ave_strain_yy, -ave_strain_xx)
 
+    print("\nThe computed elastic constants are :")
+    print("  => Young's modulus E={:.2f} GPa".format(E*1e-9))
+    print("  => Poisson's ratio Nu={:.2f}".format(Nu))
 
 '''
 # compute the maximal normal stress with this force
