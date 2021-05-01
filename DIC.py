@@ -189,7 +189,7 @@ if testChoice == 'tensile':
     # compute Young's modulus with scipy linear regression
     E, intercept, r_value, p_value, std_err = stats.linregress(ave_strain_yy, stress)
     # compute Poisson's ratio with scipy linear regression
-    Nu, intercept, r_value, p_value, std_err = stats.linregress(ave_strain_yy, -ave_strain_xx)
+    Nu, intercept, r_value, p_value, std_err = stats.linregress(ave_strain_xx, -ave_strain_yy)
 
     print("\nThe computed elastic constants are :")
     print("  => Young's modulus E={:.2f} GPa".format(E*1e-9))
